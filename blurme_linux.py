@@ -1,7 +1,8 @@
+#1.1.0
 import sys
-import platform
 import time
 import os
+import subprocess
 
 import psutil
 CPU_CORES = min(max(1, psutil.cpu_count(logical=False) or 1), 8)
@@ -18,6 +19,34 @@ cv2.setUseOptimized(True)
 import mss
 
 
+class VolumeManager:
+    _was_muted = False
+
+    @classmethod
+    def mute(cls):
+        try:
+            subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "1"], capture_output=True)
+            result = subprocess.run(["pactl", "get-sink-mute", "@DEFAULT_SINK@"], capture_output=True, text=True)
+            if "yes" not in result.stdout.lower():
+                subprocess.run(["amixer", "-D", "pulse", "sset", "Master", "mute"], capture_output=True)
+                subprocess.run(["amixer", "sset", "Master", "mute"], capture_output=True)
+            cls._was_muted = True
+        except Exception:
+            pass
+
+    @classmethod
+    def unmute(cls):
+        if not cls._was_muted:
+            return
+        try:
+            subprocess.run(["pactl", "set-sink-mute", "@DEFAULT_SINK@", "0"], capture_output=True)
+            subprocess.run(["amixer", "-D", "pulse", "sset", "Master", "unmute"], capture_output=True)
+            subprocess.run(["amixer", "sset", "Master", "unmute"], capture_output=True)
+            cls._was_muted = False
+        except Exception:
+            pass
+
+
 class ConfigManager:
     def __init__(self):
         if getattr(sys, 'frozen', False):
@@ -29,6 +58,7 @@ class ConfigManager:
         self.blurness  = 50
         self.opacity   = 255
         self.grayness  = 128
+        self.sound     = 0
         self.load()
 
     def load(self):
@@ -47,6 +77,7 @@ class ConfigManager:
                     elif key == "blurness": self.blurness  = int(value)
                     elif key == "opacity":  self.opacity   = int(value)
                     elif key == "grayness": self.grayness  = int(value)
+                    elif key == "sound":    self.sound     = int(value)
         except Exception:
             pass
 
@@ -57,6 +88,7 @@ class ConfigManager:
                 f.write(f"blurness = {self.blurness}\n")
                 f.write(f"opacity = {self.opacity}\n")
                 f.write(f"grayness = {self.grayness}\n")
+                f.write(f"sound = {self.sound}\n")
         except Exception:
             pass
 
@@ -137,6 +169,7 @@ class BlurOverlay(QWidget):
         self.opacity     = self.config.opacity
         self.gray_mode   = self.config.blur_mode == "grayscale"
         self.gray_level  = self.config.grayness
+        self.mute_sound  = self.config.sound == 0
 
         self.capture_thread    = None
         self.current_img       = None
@@ -166,7 +199,6 @@ class BlurOverlay(QWidget):
         self.setAttribute(Qt.WA_DeleteOnClose)
 
     def force_topmost(self):
-        import subprocess
         wid = int(self.winId())
         subprocess.Popen([
             "xprop", "-id", str(wid),
@@ -184,8 +216,12 @@ class BlurOverlay(QWidget):
         self.enabled = not self.enabled
         if self.enabled:
             self.first_frame_ready = False
+            if self.mute_sound:
+                VolumeManager.mute()
             self.start_capture()
         else:
+            if self.mute_sound:
+                VolumeManager.unmute()
             self.stop_capture()
             self.hide()
             self.current_img = None
@@ -259,6 +295,8 @@ class BlurOverlay(QWidget):
 
     @pyqtSlot()
     def safe_close(self):
+        if self.enabled and self.mute_sound:
+            VolumeManager.unmute()
         self.stop_capture()
         self.close()
         os._exit(0)
