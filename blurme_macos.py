@@ -20,7 +20,11 @@ import mss
 
 class ConfigManager:
     def __init__(self):
-        self.config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "blur.conf")
+        if getattr(sys, 'frozen', False):
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        self.config_path = os.path.join(base_path, "blur.conf")
         self.blur_mode = "colored"
         self.blurness  = 50
         self.opacity   = 255
