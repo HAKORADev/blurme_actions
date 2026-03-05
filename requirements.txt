@@ -1,0 +1,8 @@
+PyQt5
+mss
+pynput
+psutil
+numpy
+opencv-python-headless
+Pillow
+pyinstaller
