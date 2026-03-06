@@ -2,7 +2,7 @@ PyQt5
 mss
 pynput
 psutil
-numpy==2.0.2
+numpy==2.3.5
 opencv-python-headless
 Pillow
 pyinstaller
