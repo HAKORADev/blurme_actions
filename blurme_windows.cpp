@@ -1,4 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #define UNICODE
 #include <windows.h>
 #include <cstdio>
@@ -13,6 +14,12 @@
 #include <vector>
 #include <algorithm>
 #include <mutex>
+
+#ifdef _MSC_VER
+#define RESTRICT __restrict
+#else
+#define RESTRICT __restrict__
+#endif
 
 #define WM_BLURME_FRAME    (WM_USER + 1)
 #define WM_BLURME_SETTING  (WM_USER + 2)
@@ -102,8 +109,8 @@ public:
     }
 };
 
-static void boxBlurH(const unsigned char* __restrict__ src,
-                     unsigned char* __restrict__ dst,
+static void boxBlurH(const unsigned char* RESTRICT src,
+                     unsigned char* RESTRICT dst,
                      int w, int h, int r)
 {
     const float iarr = 1.0f / (r + r + 1);
@@ -137,8 +144,8 @@ static void boxBlurH(const unsigned char* __restrict__ src,
     }
 }
 
-static void boxBlurV(const unsigned char* __restrict__ src,
-                     unsigned char* __restrict__ dst,
+static void boxBlurV(const unsigned char* RESTRICT src,
+                     unsigned char* RESTRICT dst,
                      int w, int h, int r)
 {
     const float iarr = 1.0f / (r + r + 1);
@@ -418,32 +425,32 @@ private:
                 cfg.config.blur_mode = L"grayscale";
                 break;
             case VK_F3:
-                gray_level = max(0, gray_level - 10);
+                gray_level = std::max(0, gray_level - 10);
                 cfg.config.grayness = gray_level;
                 break;
             case VK_F4:
-                gray_level = min(255, gray_level + 10);
+                gray_level = std::min(255, gray_level + 10);
                 cfg.config.grayness = gray_level;
                 break;
             case VK_OEM_MINUS:
             case VK_SUBTRACT:
-                opacity = max(0, opacity - 4);
+                opacity = std::max(0, opacity - 4);
                 cfg.config.opacity = opacity;
                 SetLayeredWindowAttributes(hwnd, 0, (BYTE)opacity, LWA_ALPHA);
                 break;
             case VK_OEM_PLUS:
             case VK_ADD:
-                opacity = min(255, opacity + 4);
+                opacity = std::min(255, opacity + 4);
                 cfg.config.opacity = opacity;
                 SetLayeredWindowAttributes(hwnd, 0, (BYTE)opacity, LWA_ALPHA);
                 break;
             case VK_OEM_2:
             case VK_DIVIDE:
-                blur_radius = max(1, blur_radius - 1);
+                blur_radius = std::max(1, blur_radius - 1);
                 cfg.config.blurness = blur_radius * 2;
                 break;
             case VK_MULTIPLY:
-                blur_radius = min(100, blur_radius + 1);
+                blur_radius = std::min(100, blur_radius + 1);
                 cfg.config.blurness = blur_radius * 2;
                 break;
             default: return;
