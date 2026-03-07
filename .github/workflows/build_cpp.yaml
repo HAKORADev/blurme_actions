@@ -10,57 +10,69 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-cpp:
-    name: Build C++ on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            artifact_name: BlurMe-Linux-cpp
-            executable_name: BlurMe
-            source_file: blurme_linux.cpp
-          - os: windows-latest
-            artifact_name: BlurMe-Windows-cpp
-            executable_name: BlurMe.exe
-            source_file: blurme_windows.cpp
+  build-cpp-linux:
+    name: Build C++ on Linux
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libx11-dev libxext-dev libomp-dev
 
-    - name: Build C++ (Linux)
-      if: matrix.os == 'ubuntu-latest'
+    - name: Build C++
       run: |
         g++ -O3 -std=c++17 -pthread -fopenmp -o BlurMe blurme_linux.cpp -lX11 -lXext
         strip BlurMe
 
-    - name: Build C++ (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: cmd
-      run: |
-        g++ -O3 -std=c++17 -pthread -fopenmp -o BlurMe.exe blurme_windows.cpp -lgdi32 -luser32
-        strip BlurMe.exe
-
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.artifact_name }}
-        path: ${{ matrix.executable_name }}
+        name: BlurMe-Linux-cpp
+        path: BlurMe
 
     - name: Release
       if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ matrix.executable_name }}
+        files: BlurMe
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-cpp-windows:
+    name: Build C++ on Windows
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
+
+    - name: Build C++
+      shell: cmd
+      run: |
+        g++ -O3 -std=c++17 -pthread -fopenmp -o BlurMe.exe blurme_windows.cpp -lgdi32 -luser32 -lshell32
+        strip BlurMe.exe
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BlurMe-Windows-cpp
+        path: BlurMe.exe
+
+    - name: Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: BlurMe.exe
         generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
