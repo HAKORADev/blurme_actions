@@ -51,16 +51,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup MinGW
-      uses: egor-tensin/setup-mingw@v2
-      with:
-        platform: x64
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
 
     - name: Build C++
       shell: cmd
       run: |
-        g++ -O3 -std=c++17 -pthread -fopenmp -o BlurMe.exe blurme_windows.cpp -lgdi32 -luser32 -lshell32
-        strip BlurMe.exe
+        cl /O2 /EHsc /std:c++17 /Fe:BlurMe.exe blurme_windows.cpp user32.lib gdi32.lib shell32.lib
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
