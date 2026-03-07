@@ -57,7 +57,7 @@ jobs:
     - name: Build C++
       shell: cmd
       run: |
-        cl /O2 /EHsc /std:c++17 /Fe:BlurMe.exe blurme_windows.cpp user32.lib gdi32.lib shell32.lib
+        cl /O2 /EHsc /std:c++17 /Fe:BlurMe.exe blurme_windows.cpp user32.lib gdi32.lib
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

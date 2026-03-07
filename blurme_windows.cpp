@@ -107,7 +107,9 @@ static void boxBlurH(const unsigned char* __restrict__ src,
                      int w, int h, int r)
 {
     const float iarr = 1.0f / (r + r + 1);
+    #if defined(_OPENMP)
     #pragma omp parallel for schedule(static)
+    #endif
     for (int y = 0; y < h; y++) {
         for (int ch = 0; ch < 3; ch++) {
             int ti = y * w, li = ti, ri = ti + r;
@@ -140,7 +142,9 @@ static void boxBlurV(const unsigned char* __restrict__ src,
                      int w, int h, int r)
 {
     const float iarr = 1.0f / (r + r + 1);
+    #if defined(_OPENMP)
     #pragma omp parallel for schedule(static)
+    #endif
     for (int x = 0; x < w; x++) {
         for (int ch = 0; ch < 3; ch++) {
             int ti = x, li = ti, ri = ti + r * w;
@@ -199,7 +203,9 @@ static void applyGrayscale(unsigned char* data, int w, int h, int gray_level)
     if (gray_level <= 0) return;
     const float alpha = gray_level / 255.0f;
     const int   n     = w * h;
+    #if defined(_OPENMP)
     #pragma omp parallel for schedule(static)
+    #endif
     for (int i = 0; i < n; i++) {
         const float b = data[i * 4];
         const float g = data[i * 4 + 1];
